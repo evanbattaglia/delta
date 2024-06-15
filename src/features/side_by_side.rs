@@ -14,6 +14,8 @@ use crate::paint::{BgFillMethod, BgShouldFill, LineSections, Painter};
 use crate::style::Style;
 use crate::wrapping::{wrap_minusplus_block, wrap_zero_block};
 
+use std::collections::HashMap;
+
 pub fn make_feature() -> Vec<(String, OptionValueFunction)> {
     builtin_feature!([
         (
@@ -106,6 +108,8 @@ pub fn has_long_lines(
     (wrap_any[Left] || wrap_any[Right], wrapping_lines)
 }
 
+type AnnotationHashMap = HashMap<usize, Vec<String>>;
+
 #[allow(clippy::too_many_arguments)]
 pub fn paint_minus_and_plus_lines_side_by_side(
     lines: LeftRight<&Vec<(String, State)>>,
@@ -117,6 +121,29 @@ pub fn paint_minus_and_plus_lines_side_by_side(
     output_buffer: &mut String,
     config: &config::Config,
 ) {
+
+    output_buffer.push_str(format!("line_alignment: {:?}\n", line_alignment).as_str());
+    output_buffer.push_str(format!("n diff_sections left: {:?}\n", diff_sections[Left].len()).as_str());
+    output_buffer.push_str(format!("n diff_sections right: {:?}\n", diff_sections[Right].len()).as_str());
+
+    // let left_annotations: AnnotationHashMap = HashMap::from([
+    //     (145, vec![
+    //         "three eighty".to_owned(),
+    //         "no i say three eighty!".to_owned()
+    //     ]),
+    //     (382, vec![
+    //         "three eighty".to_owned(),
+    //         "no i say three eighty!".to_owned()
+    //     ]),
+    // ]);
+
+
+    let left_annotations: HashMap<usize, String> = HashMap::from([
+        (145, "helloooo one forty four".to_owned()),
+        (36, "helloooo thirty six".to_owned())
+    ]);
+    let mut pending_left_annotation: Option<(usize, &str)> = None;
+
     let line_states = LeftRight::new(
         lines[Left].iter().map(|(_, state)| state.clone()).collect(),
         lines[Right]
@@ -151,9 +178,15 @@ pub fn paint_minus_and_plus_lines_side_by_side(
             (should_wrap, line_width, long_lines)
         }
     };
+    output_buffer.push_str(format!("line_alignment mid: {:?}\n", line_alignment).as_str());
 
     let (line_alignment, line_states, syntax_sections, diff_sections) = if should_wrap {
         // Calculated for syntect::highlighting::style::Style and delta::Style
+        // // TODO EVAN note here: this is what wraps lines, adds new sections (lines with styling)
+        // and modifies the line_alignment to show how lines align to each other. we'll want to
+        // do something similar for annotations (probably a new type instead of
+        // HunkPlusWrapped/HunkMinusWrapped but we can use those for now
+        // / nah i actually dont think so. added annotations won't have style
         wrap_minusplus_block(
             config,
             syntax_sections,
@@ -171,11 +204,36 @@ pub fn paint_minus_and_plus_lines_side_by_side(
         lines_have_homolog
     };
 
+    output_buffer.push_str(format!("line_alignment after: {:?}\n", line_alignment).as_str());
     for (minus_line_index, plus_line_index) in line_alignment {
         let left_state = match minus_line_index {
             Some(i) => &line_states[Left][i],
             None => &State::HunkMinus(DiffType::Unified, None),
         };
+
+        if let Some((line_number, annotation)) = pending_left_annotation {
+            if line_numbers_data.line_number[Left] != line_number {
+                if let State::HunkMinusWrapped = left_state {
+                } else {
+                    output_buffer.push_str(&format!("left annotation: {:?}, {:?}\n", line_number, annotation));
+                    pending_left_annotation = None;
+                }
+            }
+        }
+
+        if pending_left_annotation.is_none() && left_annotations.contains_key(&line_numbers_data.line_number[Left]) {
+            let annotation = left_annotations.get(&line_numbers_data.line_number[Left]).unwrap();
+            pending_left_annotation = Some((line_numbers_data.line_number[Left], annotation));
+        }
+
+
+        let beforemin: String = format!(
+            "beforemin: {:?}, {:?}, {:?}, {:?}\n",
+            left_state, minus_line_index,
+            syntax_sections[Left].len(),
+            line_numbers_data.line_number[Left],
+        );
+
         output_buffer.push_str(&paint_left_panel_minus_line(
             minus_line_index,
             &syntax_sections[Left],
@@ -191,6 +249,14 @@ pub fn paint_minus_and_plus_lines_side_by_side(
             Some(i) => &line_states[Right][i],
             None => &State::HunkPlus(DiffType::Unified, None),
         };
+
+        let beforeplu: String = format!(
+            "beforeplu: {:?}, {:?}, {:?}, {:?}\n",
+            right_state, plus_line_index,
+            syntax_sections[Right].len(),
+            line_numbers_data.line_number[Right],
+        );
+
         output_buffer.push_str(&paint_right_panel_plus_line(
             plus_line_index,
             &syntax_sections[Right],
@@ -218,7 +284,24 @@ pub fn paint_minus_and_plus_lines_side_by_side(
             (_, _, Some(_), Some(_)) => line_numbers_data.line_number[Left] += 1,
             _ => {}
         }
+
+        let after = format!("after: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}\n",
+            plus_line_index, 
+            left_state, right_state, minus_line_index, plus_line_index,
+            line_numbers_data.line_number[Left], line_numbers_data.line_number[Right],
+        );
+        output_buffer.push_str(&beforemin);
+        output_buffer.push_str(&beforeplu);
+        output_buffer.push_str(&after);
+        output_buffer.push('\n');
+
     }
+
+    if let Some((line_number, annotation)) = pending_left_annotation {
+        output_buffer.push_str(&format!("left annotation at end: {:?}, {:?}\n", line_number, annotation));
+        pending_left_annotation = None;
+    }
+
 }
 
 #[allow(clippy::too_many_arguments)]
