@@ -122,9 +122,9 @@ pub fn paint_minus_and_plus_lines_side_by_side(
     config: &config::Config,
 ) {
 
-    output_buffer.push_str(format!("line_alignment: {:?}\n", line_alignment).as_str());
-    output_buffer.push_str(format!("n diff_sections left: {:?}\n", diff_sections[Left].len()).as_str());
-    output_buffer.push_str(format!("n diff_sections right: {:?}\n", diff_sections[Right].len()).as_str());
+    // output_buffer.push_str(format!("line_alignment: {:?}\n", line_alignment).as_str());
+    // output_buffer.push_str(format!("n diff_sections left: {:?}\n", diff_sections[Left].len()).as_str());
+    // output_buffer.push_str(format!("n diff_sections right: {:?}\n", diff_sections[Right].len()).as_str());
 
     // let left_annotations: AnnotationHashMap = HashMap::from([
     //     (145, vec![
@@ -178,7 +178,7 @@ pub fn paint_minus_and_plus_lines_side_by_side(
             (should_wrap, line_width, long_lines)
         }
     };
-    output_buffer.push_str(format!("line_alignment mid: {:?}\n", line_alignment).as_str());
+    // output_buffer.push_str(format!("line_alignment mid: {:?}\n", line_alignment).as_str());
 
     let (line_alignment, line_states, syntax_sections, diff_sections) = if should_wrap {
         // Calculated for syntect::highlighting::style::Style and delta::Style
@@ -204,7 +204,7 @@ pub fn paint_minus_and_plus_lines_side_by_side(
         lines_have_homolog
     };
 
-    output_buffer.push_str(format!("line_alignment after: {:?}\n", line_alignment).as_str());
+    // output_buffer.push_str(format!("line_alignment after: {:?}\n", line_alignment).as_str());
     for (minus_line_index, plus_line_index) in line_alignment {
         let left_state = match minus_line_index {
             Some(i) => &line_states[Left][i],
@@ -285,15 +285,15 @@ pub fn paint_minus_and_plus_lines_side_by_side(
             _ => {}
         }
 
-        let after = format!("after: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}\n",
-            plus_line_index, 
-            left_state, right_state, minus_line_index, plus_line_index,
-            line_numbers_data.line_number[Left], line_numbers_data.line_number[Right],
-        );
-        output_buffer.push_str(&beforemin);
-        output_buffer.push_str(&beforeplu);
-        output_buffer.push_str(&after);
-        output_buffer.push('\n');
+        // let after = format!("after: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}\n",
+        //     plus_line_index, 
+        //     left_state, right_state, minus_line_index, plus_line_index,
+        //     line_numbers_data.line_number[Left], line_numbers_data.line_number[Right],
+        // );
+        // output_buffer.push_str(&beforemin);
+        // output_buffer.push_str(&beforeplu);
+        // output_buffer.push_str(&after);
+        // output_buffer.push('\n');
 
     }
 
